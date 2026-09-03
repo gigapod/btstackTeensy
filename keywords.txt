@@ -1,0 +1,62 @@
+#######################################
+# Syntax Coloring Map for BTstackTeensy
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+BTstackTeensyManager	KEYWORD1
+UUID	KEYWORD1
+BD_ADDR	KEYWORD1
+BLEAdvertisement	KEYWORD1
+BLECharacteristic	KEYWORD1
+BLEService	KEYWORD1
+BLEDevice	KEYWORD1
+BLEStatus	KEYWORD1
+A2DPStreamState	KEYWORD1
+HFPEvent	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+setup	KEYWORD2
+loop	KEYWORD2
+enablePacketLogger	KEYWORD2
+enableDebugLogger	KEYWORD2
+setAdvData	KEYWORD2
+iBeaconConfigure	KEYWORD2
+startAdvertising	KEYWORD2
+stopAdvertising	KEYWORD2
+bleStartScanning	KEYWORD2
+bleStopScanning	KEYWORD2
+bleConnect	KEYWORD2
+bleDisconnect	KEYWORD2
+addGATTService	KEYWORD2
+addGATTCharacteristic	KEYWORD2
+addGATTCharacteristicDynamic	KEYWORD2
+enableClassicDiscoverable	KEYWORD2
+enableA2DPSink	KEYWORD2
+setA2DPStreamStateCallback	KEYWORD2
+enableHFPHandsFree	KEYWORD2
+setHFPEventCallback	KEYWORD2
+hfpAnswer	KEYWORD2
+hfpHangup	KEYWORD2
+hfpDial	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+BTstackTeensy	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+BLE_STATUS_OK	LITERAL1
+BLE_STATUS_DONE	LITERAL1
+BLE_STATUS_CONNECTION_TIMEOUT	LITERAL1
+BLE_STATUS_CONNECTION_ERROR	LITERAL1
+BLE_STATUS_OTHER_ERROR	LITERAL1
