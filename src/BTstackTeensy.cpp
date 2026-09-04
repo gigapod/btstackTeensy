@@ -759,22 +759,24 @@ static void bluetooth_hardware_error(uint8_t error){
     while(1);
 }
 
-// Keep in sync with hal_teensy_uart.cpp's BTSTACK_TEENSY_UART_FLOW_CONTROL --
-// that's what actually enables/disables the RTS/CTS pins on the LPUART
-// peripheral; this just tells BTstack's H4 transport whether to expect it.
-#ifndef BTSTACK_TEENSY_UART_FLOW_CONTROL
-#define BTSTACK_TEENSY_UART_FLOW_CONTROL 0
-#endif
 
-// baudrate_main temporarily 0 (disables the mid-init baud rate switch --
-// BTstack stays at 115200 for the whole session) while debugging garbled
-// data seen right after switching to 921600. Once that's root-caused, put
-// 921600 back to get full firmware-download speed.
+// baudrate_main = 921600: hci.c's own init state machine (HCI_INIT_SEND_BAUD_CHANGE
+// / HCI_INIT_SEND_BAUD_CHANGE_BCM) uses this for the whole baud-rate dance --
+// switches up for firmware download, drops back to baudrate_init while the
+// patch is applied (Broadcom/Cypress chipsets reset their UART baud when it
+// is), then switches back up to baudrate_main for the rest of the session,
+// all keyed off hci_stack->manufacturer == Broadcom (0x000f), which is what
+// the CYW43439 reports. No app-level involvement needed -- this runs for any
+// caller of the raw hci_* API, not just BTstackTeensyManager.
+//
+// Getting here relies on BT_ON actually power-cycling the module on every
+// hci_power_control(HCI_POWER_ON) though -- see control_on() in
+// teensy_bt_control.cpp for why that matters and how it's ensured.
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    0,
-    BTSTACK_TEENSY_UART_FLOW_CONTROL,
+    921600,
+    1,
     NULL,
 };
 

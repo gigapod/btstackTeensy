@@ -1926,7 +1926,7 @@ static void hci_initialization_timeout_handler(btstack_timer_source_t * ds){
                    HCI_RESET_RESEND_TIMEOUT_MS);
             if (hci_stack->hci_transport->set_baudrate){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %" PRIu32 "(timeout handler)", baud_rate);
+                printf("cyw43439: switching local UART to %" PRIu32 " baud (no ack received)\n", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             // For CSR, HCI Reset is sent on new baud rate. Don't forget to reset link for H5/BCSP
@@ -1989,6 +1989,13 @@ static void hci_initializing_run(void){
 
 #ifndef HAVE_HOST_CONTROLLER_API
             // prepare reset if command complete not received in 100ms
+            //
+            // hci_stack->timeout is shared across every init/halting substate
+            // that arms a watchdog timer; remove it first (harmless no-op if
+            // it isn't currently registered) so a resend can never try to add
+            // it while it's still linked from a previous arm -- that's what
+            // trips the run-loop's "timer already registered" assert.
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2007,6 +2014,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
+            btstack_run_loop_remove_timer(&hci_stack->timeout);
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2022,6 +2030,7 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_BAUD_CHANGE_BCM: {
             hci_reserve_packet_buffer();
             uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
+            printf("cyw43439: requesting controller switch to %" PRIu32 " baud for normal operation\n", baud_rate);
             hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE_BCM;
             hci_send_prepared_cmd_packet();
@@ -2044,6 +2053,7 @@ static void hci_initializing_run(void){
                 // Bluetooth patchram is loaded) never answer this command --
                 // there's no flow-control response to fall back on, so give
                 // it a timeout and just move on if nothing comes back.
+                btstack_run_loop_remove_timer(&hci_stack->timeout);
                 btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                 btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2058,6 +2068,7 @@ static void hci_initializing_run(void){
             if (need_baud_change) {
                 hci_reserve_packet_buffer();
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
+                printf("cyw43439: requesting controller switch to %" PRIu32 " baud for firmware download\n", baud_rate);
                 hci_stack->chipset->set_baudrate_command(baud_rate, hci_stack->hci_packet_buffer);
                 hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
                 hci_send_prepared_cmd_packet();
@@ -2067,6 +2078,7 @@ static void hci_initializing_run(void){
                 // Also armed unconditionally (not just for ST) -- some Broadcom/Cypress
                 // controllers (e.g. CYW43439 pre-firmware) apply the baud rate change but
                 // never send a Command Complete for it at all.
+                btstack_run_loop_remove_timer(&hci_stack->timeout);
                 btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                 btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2101,6 +2113,7 @@ static void hci_initializing_run(void){
                         send_cmd = true;
                         // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                         log_info("CSR Warm Boot");
+                        btstack_run_loop_remove_timer(&hci_stack->timeout);
                         btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                         btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                         btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2142,13 +2155,14 @@ static void hci_initializing_run(void){
                     // - baud rate to reset, restore UART baud rate if needed
 #ifdef ENABLE_AIROC_DOWNLOAD_MODE
                     if (hci_stack->init_airoc_download_mode) {
-                        log_info("Local baud rate change to default after init script (AIROC Download Mode)");
+                        printf("cyw43439: switching local UART back to 115200 baud after firmware download (AIROC Download Mode)\n");
                         hci_stack->hci_transport->set_baudrate(115200);
                     } else
 #endif
                     if (need_baud_change) {
                         uint32_t baud_rate = ((hci_transport_config_uart_t *)hci_stack->config)->baudrate_init;
-                        log_info("Local baud rate change to %" PRIu32 " after init script (bcm)", baud_rate);
+                        printf("cyw43439: switching local UART back to %" PRIu32 " baud after firmware download "
+                               "(controller resets its baud rate when the patch is applied)\n", baud_rate);
                         hci_stack->hci_transport->set_baudrate(baud_rate);
                     }
                     uint16_t bcm_delay_ms = 300;
@@ -2156,6 +2170,7 @@ static void hci_initializing_run(void){
                     //   -> Work around: wait here.
                     log_info("BCM delay (%u ms) after init script", bcm_delay_ms);
                     hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY;
+                    btstack_run_loop_remove_timer(&hci_stack->timeout);
                     btstack_run_loop_set_timer(&hci_stack->timeout, bcm_delay_ms);
                     btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                     btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2711,7 +2726,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
             // for others, baud rate gets changed now
             if ((hci_stack->manufacturer != BLUETOOTH_COMPANY_ID_ST_MICROELECTRONICS) && need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %" PRIu32 "(w4_send_baud_change)", baud_rate);
+                printf("cyw43439: controller acked baud change, switching local UART to %" PRIu32 " baud\n", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
@@ -2751,7 +2766,8 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM:
             if (need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                log_info("Local baud rate change to %" PRIu32 "(w4_send_baud_change_bcm))", baud_rate);
+                printf("cyw43439: controller acked baud change, switching local UART to %" PRIu32
+                       " baud for normal operation\n", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             if (need_addr_change){
@@ -6018,6 +6034,7 @@ static void hci_power_enter_halting_state(void){
     hci_stack->state = HCI_STATE_HALTING;
     hci_stack->substate = HCI_HALTING_CLASSIC_STOP;
     // setup watchdog timer for disconnect - only triggers if Controller does not respond anymore
+    btstack_run_loop_remove_timer(&hci_stack->timeout);
     btstack_run_loop_set_timer(&hci_stack->timeout, 1000);
     btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_halting_timeout_handler);
     btstack_run_loop_add_timer(&hci_stack->timeout);
