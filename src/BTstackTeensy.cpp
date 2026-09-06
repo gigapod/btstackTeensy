@@ -760,7 +760,7 @@ static void bluetooth_hardware_error(uint8_t error){
 }
 
 
-// baudrate_main = 921600: hci.c's own init state machine (HCI_INIT_SEND_BAUD_CHANGE
+// baudrate_main = 3000000: hci.c's own init state machine (HCI_INIT_SEND_BAUD_CHANGE
 // / HCI_INIT_SEND_BAUD_CHANGE_BCM) uses this for the whole baud-rate dance --
 // switches up for firmware download, drops back to baudrate_init while the
 // patch is applied (Broadcom/Cypress chipsets reset their UART baud when it
@@ -775,7 +775,7 @@ static void bluetooth_hardware_error(uint8_t error){
 static hci_transport_config_uart_t config = {
     HCI_TRANSPORT_CONFIG_UART,
     115200,
-    921600,
+    3000000, //921600,
     1,
     NULL,
 };
