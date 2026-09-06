@@ -1995,7 +1995,8 @@ static void hci_initializing_run(void){
             // it isn't currently registered) so a resend can never try to add
             // it while it's still linked from a previous arm -- that's what
             // trips the run-loop's "timer already registered" assert.
-            btstack_run_loop_remove_timer(&hci_stack->timeout);
+            // // KDB TEST
+            // btstack_run_loop_remove_timer(&hci_stack->timeout);
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2014,7 +2015,8 @@ static void hci_initializing_run(void){
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
-            btstack_run_loop_remove_timer(&hci_stack->timeout);
+            // // KDB Test
+            // btstack_run_loop_remove_timer(&hci_stack->timeout);
             btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
             btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2053,10 +2055,11 @@ static void hci_initializing_run(void){
                 // Bluetooth patchram is loaded) never answer this command --
                 // there's no flow-control response to fall back on, so give
                 // it a timeout and just move on if nothing comes back.
-                btstack_run_loop_remove_timer(&hci_stack->timeout);
-                btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
-                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
-                btstack_run_loop_add_timer(&hci_stack->timeout);
+                // KDB - not needed if flow control enabled?? 9/5 TODO - TESt
+                // btstack_run_loop_remove_timer(&hci_stack->timeout);
+                // btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
+                // btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                // btstack_run_loop_add_timer(&hci_stack->timeout);
                 hci_send_cmd(&hci_read_local_name);
                 hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_NAME;
                 break;
@@ -2078,9 +2081,10 @@ static void hci_initializing_run(void){
                 // Also armed unconditionally (not just for ST) -- some Broadcom/Cypress
                 // controllers (e.g. CYW43439 pre-firmware) apply the baud rate change but
                 // never send a Command Complete for it at all.
-                btstack_run_loop_remove_timer(&hci_stack->timeout);
+                // // KDB TEST
+                // btstack_run_loop_remove_timer(&hci_stack->timeout);
                 btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
-                btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                // btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                 btstack_run_loop_add_timer(&hci_stack->timeout);
                break;
             }
@@ -2113,7 +2117,8 @@ static void hci_initializing_run(void){
                         send_cmd = true;
                         // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
                         log_info("CSR Warm Boot");
-                        btstack_run_loop_remove_timer(&hci_stack->timeout);
+                        // KDB test
+                        // btstack_run_loop_remove_timer(&hci_stack->timeout);
                         btstack_run_loop_set_timer(&hci_stack->timeout, HCI_RESET_RESEND_TIMEOUT_MS);
                         btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                         btstack_run_loop_add_timer(&hci_stack->timeout);
@@ -2170,7 +2175,8 @@ static void hci_initializing_run(void){
                     //   -> Work around: wait here.
                     log_info("BCM delay (%u ms) after init script", bcm_delay_ms);
                     hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_BCM_DELAY;
-                    btstack_run_loop_remove_timer(&hci_stack->timeout);
+                    // kdb test?
+                    // btstack_run_loop_remove_timer(&hci_stack->timeout);
                     btstack_run_loop_set_timer(&hci_stack->timeout, bcm_delay_ms);
                     btstack_run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
                     btstack_run_loop_add_timer(&hci_stack->timeout);
