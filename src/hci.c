@@ -59,7 +59,6 @@
 #endif
 
 #include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -2713,11 +2712,7 @@ static void hci_initializing_event_handler(const uint8_t * packet, uint16_t size
         case HCI_INIT_W4_SEND_BAUD_CHANGE_BCM:
             if (need_baud_change){
                 uint32_t baud_rate = hci_transport_uart_get_main_baud_rate();
-                // TODO - KDB - this printf is needed for audio to work - seems a delay or something
-                // needs to be added here .. or something to the coms
-                printf("cyw43439: controller acked baud change, switching local UART to %" PRIu32
-                       " baud for normal operation\n", baud_rate);
-                
+                log_info("Local baud rate change to %" PRIu32 "(w4_send_baud_change_bcm))", baud_rate);
                 hci_stack->hci_transport->set_baudrate(baud_rate);
             }
             if (need_addr_change){
