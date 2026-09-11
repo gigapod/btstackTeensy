@@ -99,6 +99,8 @@ int hal_uart_dma_set_baud(uint32_t baud) {
         current_baud = baud;
         // Drain anything in flight before restarting the peripheral at the new baud.
         BT_UART.flush();
+        // small delay to allow the UART hardware to settle after changing the baud rate.
+        delay(5);
         configure_uart(baud);
         return 0;
 }
