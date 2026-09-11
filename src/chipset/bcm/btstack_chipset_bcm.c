@@ -240,11 +240,11 @@ static void chipset_init(const void * config){
     if (custom_patchram_data != NULL){
         active_patchram_data = custom_patchram_data;
         active_patchram_size = custom_patchram_size;
-        printf("cyw43439: loading custom firmware patch, %u bytes\n", (unsigned int) active_patchram_size);
+        log_info("chipset-bcm: init custom script, len %u", (unsigned int) active_patchram_size);
     } else {
         active_patchram_data = brcm_patchram_buf;
         active_patchram_size = (uint32_t) brcm_patch_ram_length;
-        printf("cyw43439: loading firmware %s, %u bytes\n", brcm_patch_version, (unsigned int) active_patchram_size);
+        log_info("chipset-bcm: init script %s, len %u", brcm_patch_version, (unsigned int) active_patchram_size);
     }
     init_script_offset = 0;
     send_download_command = 1;
@@ -252,15 +252,11 @@ static void chipset_init(const void * config){
 
 static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     // no initscript
-    if (active_patchram_size == 0){
-        printf("cyw43439: no firmware patch configured, skipping download\n");
-        return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
-    }
+    if (active_patchram_size == 0) return BTSTACK_CHIPSET_NO_INIT_SCRIPT;
 
     // send download firmware command
     if (send_download_command){
         send_download_command = 0;
-        printf("cyw43439: sending Download_Minidriver command, starting firmware download\n");
         hci_cmd_buffer[0] = 0x2e;
         hci_cmd_buffer[1] = 0xfc;
         hci_cmd_buffer[2] = 0x00;
@@ -268,14 +264,13 @@ static btstack_chipset_result_t chipset_next_command(uint8_t * hci_cmd_buffer){
     }
 
     if ((uint32_t) init_script_offset >= active_patchram_size) {
-        printf("cyw43439: firmware download complete, %u bytes sent\n", (unsigned int) init_script_offset);
         return BTSTACK_CHIPSET_DONE;
     }
 
     int cmd_len = 3 + active_patchram_data[init_script_offset+2];
     memcpy(&hci_cmd_buffer[0], &active_patchram_data[init_script_offset], cmd_len);
     init_script_offset += cmd_len;
-    return BTSTACK_CHIPSET_VALID_COMMAND;
+    return BTSTACK_CHIPSET_VALID_COMMAND;     
 }
 #endif
 
