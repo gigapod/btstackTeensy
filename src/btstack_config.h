@@ -50,12 +50,10 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
 
+#define NVM_NUM_DEVICE_DB_ENTRIES  8
 #define NVM_NUM_LINK_KEYS          8
 
 // no flash-backed TLV in this port -> in-memory link key / LE device DB only
-// (pairing is lost on reset). NVM_NUM_DEVICE_DB_ENTRIES must stay undefined:
-// defining it selects ble/le_device_db_tlv.c (which requires a
-// btstack_tlv_t backend we don't have here, and asserts on first use)
-// instead of ble/le_device_db_memory.c's RAM-only implementation.
+// (pairing is lost on reset).
 
 #endif
