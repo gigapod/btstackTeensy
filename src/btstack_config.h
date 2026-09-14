@@ -50,7 +50,11 @@
 #define MAX_NR_SM_LOOKUP_ENTRIES 3
 #define MAX_NR_WHITELIST_ENTRIES 1
 
-#define NVM_NUM_DEVICE_DB_ENTRIES  8
+//
+// KDB - TODO -  For initial work - just use  the memory only solution for the link/bond database
+// This is enabled by not defining NVM_NUM_DEVICE_DB_ENTRIES
+//
+// #define NVM_NUM_DEVICE_DB_ENTRIES  8
 #define NVM_NUM_LINK_KEYS          8
 
 // no flash-backed TLV in this port -> in-memory link key / LE device DB only
